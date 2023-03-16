@@ -9,7 +9,7 @@ import numpy.typing as npt
 from numpy import array, float64
 from typing_extensions import TypeAlias
 
-from .operators import prod
+from .operators import prod, mulLists, sum
 
 MAX_DIMS = 32
 
@@ -42,9 +42,7 @@ def index_to_position(index: Index, strides: Strides) -> int:
     Returns:
         Position in storage
     """
-
-    # TODO: Implement for Task 2.1.
-    raise NotImplementedError("Need to implement for Task 2.1")
+    return int(sum(mulLists(index, strides)))
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -60,8 +58,33 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    # TODO: Implement for Task 2.1.
-    raise NotImplementedError("Need to implement for Task 2.1")
+    stride: Iterable[int] = len(shape) * [0]
+    strideVal: int = 1
+    for i in range(len(shape) - 1, -1, -1):
+        stride[i] = strideVal
+        strideVal *= shape[i]
+    stride = tuple(stride)
+    for i, strideVal in enumerate(stride):
+        out_index[i] = ordinal // strideVal
+        ordinal = ordinal % strideVal
+
+
+def to_index_from_strides(ordinal: int, strides: Strides, out_index: OutIndex) -> None:
+    """
+    Convert an `ordinal` to an index in the `shape`.
+    Should ensure that enumerating position 0 ... size of a
+    tensor produces every index exactly once. It
+    may not be the inverse of `index_to_position`.
+
+    Args:
+        ordinal: ordinal position to convert.
+        shape : tensor shape.
+        out_index : return index corresponding to position.
+
+    """
+    for i, strideVal in enumerate(strides):
+        out_index[i] = ordinal // strideVal
+        ordinal = ordinal % strideVal
 
 
 def broadcast_index(
@@ -83,8 +106,14 @@ def broadcast_index(
     Returns:
         None
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError("Need to implement for Task 2.2")
+    shapeDim: int = len(shape)
+    bigShapeDim: int = len(big_shape)
+    assert bigShapeDim >= shapeDim
+    assert len(out_index) == shapeDim
+    dimDiff = bigShapeDim - shapeDim
+    for i in range(dimDiff, bigShapeDim):
+        j = i - dimDiff
+        out_index[j] = min(big_index[i], shape[j] - 1)
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -101,8 +130,25 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     Raises:
         IndexingError : if cannot broadcast
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError("Need to implement for Task 2.2")
+    finalShape1: UserShape = list(shape1)
+    finalShape2: UserShape = list(shape2)
+    dim1: int = len(shape1)
+    dim2: int = len(shape2)
+    dimDiff: int = abs(dim1 - dim2)
+    if dim1 < dim2:
+        finalShape1 = dimDiff * [1] + finalShape1
+    else:
+        finalShape2 = dimDiff * [1] + finalShape2
+    for i in range(len(finalShape1)):
+        if finalShape1[i] == finalShape2[i]:
+            continue
+        if finalShape1[i] == 1:
+            finalShape1[i] = finalShape2[i]
+        elif finalShape2[i] == 1:
+            finalShape2[i] = finalShape1[i]
+        else:
+            raise IndexingError()
+    return tuple(finalShape1)
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
@@ -199,6 +245,7 @@ class TensorData:
         return tuple((random.randint(0, s - 1) for s in self.shape))
 
     def get(self, key: UserIndex) -> float:
+        # breakpoint()
         x: float = self._storage[self.index(key)]
         return x
 
@@ -218,12 +265,18 @@ class TensorData:
         Returns:
             New `TensorData` with the same storage and a new dimension order.
         """
+        # order = [int(i) for i in order]
         assert list(sorted(order)) == list(
             range(len(self.shape))
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
-
-        # TODO: Implement for Task 2.1.
-        raise NotImplementedError("Need to implement for Task 2.1")
+        newShape: UserShape = len(self.shape) * [0]
+        newStrides: UserStrides = len(self.strides) * [0]
+        for i, x in enumerate(order):
+            newShape[i] = self.shape[x]
+            newStrides[i] = self.strides[x]
+        newShape = tuple(newShape)
+        newStrides = tuple(newStrides)
+        return TensorData(self._storage, newShape, newStrides)
 
     def to_string(self) -> str:
         s = ""

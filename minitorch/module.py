@@ -31,11 +31,15 @@ class Module:
 
     def train(self) -> None:
         "Set the mode of this module and all descendent modules to `train`."
-        raise NotImplementedError("Need to include this file from past assignment.")
+        self.training = True
+        for module in self.modules():
+            module.train()
 
     def eval(self) -> None:
         "Set the mode of this module and all descendent modules to `eval`."
-        raise NotImplementedError("Need to include this file from past assignment.")
+        self.training = False
+        for module in self.modules():
+            module.eval()
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
         """
@@ -45,11 +49,23 @@ class Module:
         Returns:
             The name and `Parameter` of each ancestor parameter.
         """
-        raise NotImplementedError("Need to include this file from past assignment.")
+        allParameters: Sequence[Tuple[str, Parameter]] = []
+        for paramName, paramValue in self._parameters.items():
+            allParameters.append((paramName, paramValue))
+        for modName, module in self._modules.items():
+            moduleParameters: Sequence[Tuple[str, Parameter]] = module.named_parameters()
+            moduleParameters = [(f"{modName}.{tupel[0]}", tupel[1]) for tupel in moduleParameters]
+            allParameters += moduleParameters
+        return allParameters
 
     def parameters(self) -> Sequence[Parameter]:
         "Enumerate over all the parameters of this module and its descendents."
-        raise NotImplementedError("Need to include this file from past assignment.")
+        allParameters: Sequence[Parameter] = []
+        for parameter in self._parameters.values():
+            allParameters.append(parameter)
+        for module in self.modules():
+            allParameters += module.parameters()
+        return allParameters
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """
@@ -115,9 +131,9 @@ class Module:
 
 class Parameter:
     """
-    A Parameter is a special container stored in a `Module`.
+    A Parameter is a special container stored in a :class:`Module`.
 
-    It is designed to hold a `Variable`, but we allow it to hold
+    It is designed to hold a :class:`Variable`, but we allow it to hold
     any value for testing.
     """
 

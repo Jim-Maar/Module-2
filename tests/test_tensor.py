@@ -26,6 +26,7 @@ def test_create(t1: List[float]) -> None:
 def test_one_args(
     fn: Tuple[str, Callable[[float], float], Callable[[Tensor], Tensor]], t1: Tensor
 ) -> None:
+    # breakpoint()
     "Test one-arg functions compared to floats"
     name, base_fn, tensor_fn = fn
     t2 = tensor_fn(t1)
@@ -193,6 +194,7 @@ def test_reduce_forward_one_dim() -> None:
     t = tensor([[2, 3], [4, 6], [5, 7]])
 
     # here 0 means to reduce the 0th dim, 3 -> nothing
+    # breakpoint()
     t_summed = t.sum(0)
 
     # shape (2)
@@ -210,6 +212,7 @@ def test_reduce_forward_one_dim_2() -> None:
 
     # shape (3)
     t_sum_2_expected = tensor([[5], [10], [12]])
+    # breakpoint()
     assert t_summed_2.is_close(t_sum_2_expected).all().item()
 
 
